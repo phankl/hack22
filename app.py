@@ -17,8 +17,6 @@ def index():
 def upload_csv():
 	#extract file path entry and read contents into dataframe
 	file = request.files['file']
-	#if not file:
-		#return "No file"
 	df = pd.read_csv(file)
 
 	#get column types and column names
@@ -27,15 +25,22 @@ def upload_csv():
 	column_names = [col for col in df.columns]
 
 	#connect to database
-	
 	#conn = sqlite3.connect('CSV_DATA.db')
 	#c = conn.cursor()
 
 	#right now, only supports one table of data
+	#table vals is a string of the column names
 	table_vals = ""
 	for col in column_names:
 		table_vals = table_vals+" "+col
+		if col_types[col] == 'float64':
+			table_vals += " real,"
+		elif col_types[col] == 'int64':
+			table_vals += " real,"
+		elif col_types[col] == 'object':
+			table_vals += " text,"
 	table_vals = table_vals.rstrip(',')
+	table_vals = table_vals[1:]
 
 	#create table
 	#c.execute('CREATE TABLE if not exists T1 ('+table_vals+')')
@@ -46,9 +51,9 @@ def upload_csv():
 		for col in column_names:
 			names_string = names_string + "'" + str(j[col])+"',"
 		names_string = names_string.rstrip(',')
-	#	if names_string != '':
-	#		c.execute("INSERT INTO T1 VALUES "+names_string+")")
-	#conn.commit()
+		#if names_string != '':
+			#c.execute("INSERT INTO T1 VALUES "+names_string+")")
+			#conn.commit()
 	#return "csv data in db!"
 	d = {"table_vals":table_vals, "names_string":names_string, "column_names":column_names}
 	return d
