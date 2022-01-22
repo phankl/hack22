@@ -1,6 +1,8 @@
 from flask import Flask, request, render_template, Response
 import pandas as pd
 
+#error importing graph - need to install dependencies?
+#import graph
 app = Flask(__name__)
 
 @app.route('/')
@@ -14,8 +16,6 @@ def csv_data():
 	file = request.files['file']
 	df = pd.read_csv(file)
 
-	#get column types and column names
-	#col_types = (df.dtypes).to_dict()
 	column_names = [col for col in df.columns]
 	return {"columns":column_names}
 
