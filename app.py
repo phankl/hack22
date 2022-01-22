@@ -5,9 +5,6 @@ import pandas as pd
 
 app = Flask(__name__)
 
-# connect database with csv
-# put csv to database --> put csv into mysql database
-
 @app.route('/')
 def index():
 	return render_template("index.html")
@@ -29,16 +26,8 @@ def upload_csv():
 	c = conn.cursor()
 
 	#right now, only supports one table of data
-	#table vals is a string of the column names
-	table_vals = ''+column_names[0]
-	if col_types[column_names[0]] == 'float64':
-		table_vals += " FLOAT PRIMARY KEY,"
-	elif col_types[column_names[0]] == 'int64':
-		table_vals += " INT PRIMARY KEY,"
-	elif col_types[column_names[0]] == 'object':
-		table_vals += " VARCHAR(255) PRIMARY KEY,"
-
-	for col in column_names[1:]:
+	table_vals = ''
+	for col in column_names:
 		table_vals = table_vals+" "+col
 		if col_types[col] == 'float64':
 			table_vals += " FLOAT,"
@@ -46,7 +35,7 @@ def upload_csv():
 			table_vals += " INT,"
 		elif col_types[col] == 'object':
 			table_vals += " VARCHAR(255),"
-	table_vals = table_vals[:len(table_vals)-1]
+	table_vals = table_vals[1:len(table_vals)-1]
 
 	#create table
 	c.execute('CREATE TABLE if not exists T1 ('+table_vals+')')
@@ -61,9 +50,6 @@ def upload_csv():
 			c.execute("INSERT INTO T1 VALUES "+row_data+")")
 			conn.commit()
 	return "csv data in db!"
-	#d = {"table_vals":table_vals, "row_data":row_data, "column_names":column_names}
-	#return d
-	#return " 'CREATE TABLE if not exists T1 ('"+table_vals+"')'"
 
 #direction to display the CSV data
 @app.route('/display_csv', methods=['POST', 'GET'])
