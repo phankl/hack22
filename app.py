@@ -51,14 +51,6 @@ def upload_csv():
 			conn.commit()
 	return "csv data in db!"
 
-#direction to display the CSV data
-@app.route('/display_csv', methods=['POST', 'GET'])
-def display_csv():
-	#connect
-	cn = sqlite3.connect('CSV_DATA.db')
-	df = pd.read_sql_query("SELECT * FROM T1", cn)
-	return render_template("display_csv.html", data=df.to_html())
-
 if __name__ == "__main__":
 	app.run()
 
