@@ -46,8 +46,6 @@ def upload_csv():
 			table_vals += " INT,"
 		elif col_types[col] == 'object':
 			table_vals += " VARCHAR(255),"
-	#table_vals = table_vals.rstrip(',')
-	#table_vals = table_vals[1:len(table_vals)-1]
 	table_vals = table_vals[:len(table_vals)-1]
 
 	#create table
@@ -58,7 +56,7 @@ def upload_csv():
 		row_data = '('
 		for col in column_names:
 			row_data = row_data + "'" + str(j[col])+"',"
-		row_data = row_data.rstrip(',')
+		row_data = row_data[:len(row_data)-1]
 		if row_data != '':
 			c.execute("INSERT INTO T1 VALUES "+row_data+")")
 			conn.commit()
