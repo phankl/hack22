@@ -8,9 +8,10 @@ import statsmodels.api as sm
 ## Constants
 
 MIN_DATASET_SIZE=1000
-P_VALUE_CRITERION = 0.05
+P_VALUE_CRITERION = 0.01
 FILEPATH = "data/2005-tfldata-accidents.csv" # Note this is a local path - must change for server (tekeh)
 TEST_FEATURES = ['Accident Severity', 'Road Type', 'Time', 'Light Conditions (Banded)', 'Road Surface', 'Weather'] ## The subset we will build the model on
+DAYLIGHT_HORIZON = 1800
 
 # Functions
 
@@ -18,9 +19,9 @@ def is_independent(dat, X, Y, Z=None):
     """
     Checks whether X|Z is independent of Y. Z is a set of covariates, whereas X, Y are single covariates
     dat : pandas dataframe
-    X : column label
-    Y : column label
-    Z : column labels (1 for now, but will generalise)
+    X : column label, type == list
+    Y : column label, type == list
+    Z : column labels (1 for now, but will generalise), type == list
 
     Works for categorical data at the moment - continuous data is even easier
     """
@@ -36,7 +37,6 @@ def is_independent(dat, X, Y, Z=None):
 
     else:
         ## Here e deal with the set Z not empty. Take const Z cuts of the data and look for indep.
-
         ## Create new column which is a tupled version of the control variables
         
         dat['Combined_Controls'] = list(zip(*[dat[x] for x in Z]))
@@ -64,13 +64,29 @@ def is_independent(dat, X, Y, Z=None):
         print(f"{X} | {Z} does not depend on {Y}")
         return 0, res_list, pvalues_list
 
+def time_preprocess(dat):
+    """
+    Helper function to postprocess tfl data time field
+    """
+    dat.Time = pd.to_numeric(dat.Time.str[1:]) # postprocess for tfl data
+    x = dat.Time < DAYLIGHT_HORIZON
+    dat.Time = x.map({True:1, False:2})
+    return dat ## for success
+    
+    
 
 if __name__ == "__main__":
 
     dat = pd.read_csv(FILEPATH)[TEST_FEATURES] ## truncated set
+    dat = time_preprocess(dat)
     Y = ['Road Surface']
     X = ['Accident Severity']
     Z = ['Weather']
-    bit, res_list, p_list = is_independent(dat, Y, X, Z)
+    bit, res_list, p_list = is_independent(dat, X, Y, Z)
 
-    ## Try 
+    ## Test: Do all possible combs (with |Z| = 1) to see the results and intuitively evaluate
+    from itertools import product, combinations
+    for X, Y, Z in combinations(TEST_FEATURES, r=3):
+        #print(X,Y,Z)
+        bit, res_list, p_list = is_independent(dat, [X], [Y], [Z])
+
