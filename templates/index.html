@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+	<style>
+		.csv-form{
+			display:flex;
+			justify-content: center;
+		}
+		.learn{
+			display:flex;
+			justify-content: center;
+		}
+		h1 {
+			 text-align:center;
+		}
+		h2 {
+			 text-align:center;
+			 color:Tomato;
+		}
+		h3 {
+			 text-align:center;
+		}
+	</style>
+
+	<head>
+		<title> Causal Graph </title>
+	</head>
+
+	<body>
+		<h1>Causal Graphs</h1>
+		<h2> An application to visualize causal relationships</h2>
+		<h3> Upload your CSV file</h3>
+		<div class="csv-form">
+			<form method="POST" action="/csv_data" enctype="multipart/form-data">
+				<input type="file" name="file">
+				<input type="submit" value="Submit">
+			</form>
+		</div>
+
+		<img src="/images/casual_graph_earth.jpg" width = "30%" alt="graph"/ style="padding-bottom: 30px;"> 
+
+		<div class="learn">
+			<h3>Learn more about <a href="https://www.datascienceassn.org/sites/default/files/CAUSAL%20INFERENCE%20IN%20STATISTICS.pdf">Causal Inference</a></h3>
+		</div>
+		<h7 style="font-size: 0.7em; color: rgb(1, 10, 17)">
+            Created by P, T, R, N
+        </h7>
+	</body>
+</html>
