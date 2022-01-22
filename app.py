@@ -1,9 +1,6 @@
 from flask import Flask, request, render_template, Response
 import pandas as pd
 import graph
-#import io
-#from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-#from matplotlib.figure import Figure
 
 app = Flask(__name__)
 
@@ -11,20 +8,18 @@ app = Flask(__name__)
 def index():
 	return render_template("index.html")
 
-#direction for extracting CSV file
-@app.route('/csv_data', methods=['POST'])
-def csv_data():
+#direction for displaying causal graph based on user inputted csv
+@app.route('/causal_graph', methods=['POST'])
+def causal_graph():
 	#extract file path entry and read contents into dataframe
 	file = request.files['file']
 	df = pd.read_csv(file)
 
-	column_names = [col for col in df.columns]
-	return {"columns":column_names}
+	#column_names = [col for col in df.columns]
+	#return {"columns":column_names}
 
-#path to image of causal graph
-@app.route('/graphs')
-def graph_image():
-	return render_template('graph_image.html', url='graph.png')
+	#return the graph image wrapped in html
+	return render_template('graph.html', url='graph.png')
 
 if __name__ == "__main__":
 	app.run()
