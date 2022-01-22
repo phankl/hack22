@@ -5,6 +5,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from scipy.sparse.linalg import eigs
 
+from node_independence import *
+
 def unwrap_bool(n, b):
   result = np.zeros((n, n), dtype=int)
   row = 1
@@ -77,12 +79,12 @@ def classify_path_nodes(a, path):
 def difference_combinations(pair, n):
   nodes = list(range(n))
   diff = [node for node in nodes if node not in pair]
-  combs = [list(itertools.combinations(diff, i)) for i in range(n-2)]
+  combs = [list(itertools.combinations(diff, i)) for i in range(n-1)]
   combs = [j for sub in combs for j in sub]
 
   return combs
 
-def check_model(a, node_map, paths, node_types, descendants):
+def check_model(dat, a, node_map, paths, node_types, descendants):
   n = len(a)
 
   for pair, sub in paths.items():
@@ -105,21 +107,35 @@ def check_model(a, node_map, paths, node_types, descendants):
           all_paths_blocked = False
           break
       
-      x_label = node_map[pair[0]]
-      y_label = node_map[pair[1]]
-      z_labels = [node_map[z_node] for z_node in z]
-      pair_independent = is_independent(x_label, y_label, z_labels)
+      x_node = node_map[pair[0]]
+      y_node = node_map[pair[1]]
+      z_nodes = [node_map[z_node] for z_node in z]
+      
+      x_label = TEST_FEATURES[x_node]
+      y_label = TEST_FEATURES[y_node]
+      z_labels = [TEST_FEATURES[z_node] for z_node in z_nodes]
+
+      if len(z_labels) == 0:
+        z_labels = None
+      pair_independent = is_independent(dat, [x_label], [y_label], z_labels)
       if all_paths_blocked != pair_independent:
         return False
         
   return True
 
-def model_search(n):
+def model_search(path, features):
+    
+  dat = pd.read_csv(path)[features] ## truncated set
+  dat = time_preprocess(dat)
+
+  n = len(dat.columns)
+
   graphs = np.loadtxt(f"graphs_{n}.gam", dtype=int)
   models = []
 
   count = 0
   for i, graph in enumerate(graphs):
+    print(i/len(graphs)*100)
     a = unwrap_bool(n, graph)
     g = nx.convert_matrix.from_numpy_matrix(a, create_using=nx.DiGraph)
 
@@ -140,11 +156,12 @@ def model_search(n):
     node_types = {pair: [classify_path_nodes(a, path) for path in sub] for pair, sub in paths.items()}
 
     # get all descendant nodes for each node
-    descendents = [nx.descendants(g, i) + [i] for i in range(n)]
+    descendants = [nx.descendants(g, i) | {i} for i in range(n)]
 
     # iterate over all node_maps to get models
     for node_map in node_maps_red:
-      if check_model(graph, node_map, paths, node_types, descendants):
+      if check_model(dat, a, node_map, paths, node_types, descendants):
+        print("Model added")
         models += [(graph, node_map)]
       count += 1
 
@@ -161,7 +178,4 @@ def generate_dags(n, name):
   end = time.time()
   print(n, end-start)
 
-print(model_search(7))
-
-#for n in range(8, 9):
-#  generate_dags(n, f'graphs_{n}.gam')
+model_search(FILEPATH, TEST_FEATURES)

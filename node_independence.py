@@ -31,7 +31,7 @@ def is_independent(dat, X, Y, Z=None):
     if Z is None:
         ## Testing direct dependence
         #tab = pd.crosstab(dat[X], dat[Y])
-        table = sm.stats.Table.from_data( df[X+Y][dat[Z] == cat] ) 
+        table = sm.stats.Table.from_data(dat[X+Y]) 
         res = table.test_nominal_association()
         pval = res.pvalue
 
@@ -58,10 +58,10 @@ def is_independent(dat, X, Y, Z=None):
     
     #print(pval)
     if pval < P_VALUE_CRITERION: ## 5% significance, say. Reject the null 
-        print(f"{X} | {Z} depends on {Y}")
+        #print(f"{X} | {Z} depends on {Y}")
         return 1, res_list, pvalues_list
     else:
-        print(f"{X} | {Z} does not depend on {Y}")
+        #print(f"{X} | {Z} does not depend on {Y}")
         return 0, res_list, pvalues_list
 
 def time_preprocess(dat):
