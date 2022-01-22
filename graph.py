@@ -48,9 +48,10 @@ def check_graph(n, b):
     if conn == 0:
       return False
     else:
-      #g = nx.convert_matrix.from_numpy_matrix(a)
-      #nx.draw(g, arrows=True)
+      g = nx.convert_matrix.from_numpy_matrix(a)
+      nx.draw(g, arrows=True)
       #plt.show()
+      plt.savefig('graph.png')
       return True
 
 def check_model(a, node_map, paths):
@@ -118,9 +119,10 @@ def generate_dags(n, name):
   np.savetxt(name, graphs, fmt='%i')
   
   end = time.time()
-  print(n, end-start)
+  #print(n, end-start)
 
-print(model_search(7))
+#print(model_search(7))
 
-#for n in range(8, 9):
-#  generate_dags(n, f'graphs_{n}.gam')
+#for n in range(1,5):
+n = 5
+generate_dags(n, f'graphs_{n}.gam')
