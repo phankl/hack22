@@ -53,10 +53,6 @@ def check_graph(n, b):
       #plt.show()
       plt.savefig('graph.png')
       return True
-
-def check_model(a, node_map, paths):
-  
-  return False
  
 def classify_path_nodes(a, path):
   result = [0] * (len(path) - 2)
@@ -79,6 +75,46 @@ def classify_path_nodes(a, path):
   
   return result
 
+def difference_combinations(pair, n):
+  nodes = list(range(n))
+  diff = [node for node in nodes if node not in pair]
+  combs = [list(itertools.combinations(diff, i)) for i in range(n-2)]
+  combs = [j for sub in combs for j in sub]
+
+  return combs
+
+def check_model(a, node_map, paths, node_types, descendants):
+  n = len(a)
+
+  for pair, sub in paths.items():
+    zs = difference_combinations(pair, n)
+    for z in zs:
+      all_paths_blocked = True
+      for i, path in enumerate(sub):
+        path_blocked = False
+        for j, node in enumerate(path[1:-1]):
+          node_type = node_types[pair][i][j]
+          # check for chain or fork blocker
+          if (node_type == 0 or node_type == 1) and node in z:
+            path_blocked = True
+            break
+          # check for collider blocker
+          if node_type == 2 and all([desc in z for desc in descendants[node]]):
+            path_blocked = True
+            break
+        if not path_blocked:
+          all_paths_blocked = False
+          break
+      
+      x_label = node_map[pair[0]]
+      y_label = node_map[pair[1]]
+      z_labels = [node_map[z_node] for z_node in z]
+      pair_independent = is_independent(x_label, y_label, z_labels)
+      if all_paths_blocked != pair_independent:
+        return False
+        
+  return True
+
 def model_search(n):
   graphs = np.loadtxt(f"graphs_{n}.gam", dtype=int)
   models = []
@@ -86,7 +122,8 @@ def model_search(n):
   count = 0
   for i, graph in enumerate(graphs):
     a = unwrap_bool(n, graph)
-    
+    g = nx.convert_matrix.from_numpy_matrix(a, create_using=nx.DiGraph)
+
     # all node mappings
     n_out_edges = np.sum(a, axis=1) 
     node_maps = itertools.permutations(range(n))
@@ -98,13 +135,17 @@ def model_search(n):
     a_sym = a + a.T
     g_sym = nx.convert_matrix.from_numpy_matrix(a_sym)
     pairs = itertools.combinations(range(n), 2)
-    paths = [nx.algorithms.simple_paths.all_simple_paths(g, *pair) for pair in pairs]
-    paths = [path for sub in paths for path in sub]
-    classified_path_nodes = [classify_path_nodes(a, path) for path in paths]
+    paths = {pair: nx.algorithms.simple_paths.all_simple_paths(g, *pair) for pair in pairs}
+    
+    # classify path nodes as chain, fork or collider
+    node_types = {pair: [classify_path_nodes(a, path) for path in sub] for pair, sub in paths.items()}
+
+    # get all descendant nodes for each node
+    descendents = [nx.descendants(g, i) + [i] for i in range(n)]
 
     # iterate over all node_maps to get models
     for node_map in node_maps_red:
-      if check_model(graph, node_map, paths):
+      if check_model(graph, node_map, paths, node_types, descendants):
         models += [(graph, node_map)]
       count += 1
 
