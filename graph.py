@@ -50,9 +50,10 @@ def check_graph(n, b):
     if conn == 0:
       return False
     else:
-      #g = nx.convert_matrix.from_numpy_matrix(a)
-      #nx.draw(g, arrows=True)
+      g = nx.convert_matrix.from_numpy_matrix(a)
+      nx.draw(g, arrows=True)
       #plt.show()
+      plt.savefig('graph.png')
       return True
  
 def classify_path_nodes(a, path):
@@ -176,6 +177,6 @@ def generate_dags(n, name):
   np.savetxt(name, graphs, fmt='%i')
   
   end = time.time()
-  print(n, end-start)
+  #print(n, end-start)
 
 model_search(FILEPATH, TEST_FEATURES)
