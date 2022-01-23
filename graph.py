@@ -135,7 +135,7 @@ def check_model(cache, a, node_map, paths, node_types, descendants, features):
 def model_search(path, features):
     
   dat = pd.read_csv(path)[features] ## truncated set
-  dat = tfl_preprocess(dat)
+  #dat = tfl_preprocess(dat)
 
   n = len(dat.columns)
 
@@ -171,7 +171,7 @@ def model_search(path, features):
     node_maps = itertools.permutations(range(n))
     
     # detect outgoing edges from output variable
-    node_maps_red = (node_map for node_map in node_maps if n_out_edges[node_map.index(0)] > 0)  
+    node_maps_red = (node_map for node_map in node_maps if n_out_edges[node_map.index(0)] == 0)  
     
     # get all simple paths between any pairs in the graph
     a_sym = a + a.T
@@ -187,6 +187,14 @@ def model_search(path, features):
 
     # iterate over all node_maps to get models
     for node_map in node_maps_red:
+
+      # show model
+      '''
+      labels = {i: features[node_map[i]] for i in range(n)}
+      nx.draw(g, arrows=True, with_labels=True, labels=labels)
+      plt.show()
+      '''
+
       if check_model(cache, a, node_map, paths, node_types, descendants, features):
         print("Model added")
         models += [(graph, node_map)]
@@ -205,5 +213,8 @@ def generate_dags(n, name):
   end = time.time()
   #print(n, end-start)
 
-models = model_search(FILEPATH, TEST_FEATURES_TFL)
+filepath = "tests/simple_chain_testset.csv"
+features = ['Z', 'Y', 'X']
+
+models = model_search(filepath, features)
 print(models)
