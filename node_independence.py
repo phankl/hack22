@@ -33,7 +33,15 @@ def is_independent(dat, X, Y, Z=None, categorical=True):
         ## Testing direct dependence
         #tab = pd.crosstab(dat[X], dat[Y])
         table = sm.stats.Table.from_data(dat[X+Y]) 
-        table = remove_low_occupancy_cells(table)
+        table, status_code = remove_low_occupancy_cells(table)
+        if status_code == 0:
+            print(f"Association can not be determined. Likely too many gaps in the data table")
+            return -1, [], []
+        #print(table.table_orig.shape)
+        if table.table_orig.shape[0] < 2 or table.table_orig.shape[1] < 2:
+            print(f"Association can not be determined. Likely too many gaps in the data table")
+            return -1, [], []
+        #print(table.table_orig.shape)
         if np.squeeze(table.table_orig).ndim == 1:
             print(f"Association can not be determined. Likely too many gaps in the data table")
             return -1, [], []
@@ -48,20 +56,28 @@ def is_independent(dat, X, Y, Z=None, categorical=True):
         controlled_categories = dat['Combined_Controls'].unique()
         for cat in controlled_categories:
             #print(cat)
-            try:
-                dat_subset = dat[X+Y][dat['Combined_Controls'] == cat]
-                if dat_subset.shape[0] < MIN_DATASET_SIZE:
-                    continue
-                table = sm.stats.Table.from_data( dat_subset ) 
-                table = remove_low_occupancy_cells(table)
-                if np.squeeze(table.table_orig).ndim == 1:
-                    print(f"Association can not be determined. Likely too many gaps in the data table")
-                    return -1, [], []
-                res = table.test_nominal_association()
-                pvalues_list.append(res.pvalue)
-                res_list.append(res)
-            except:
+            
+            dat_subset = dat[X+Y][dat['Combined_Controls'] == cat]
+            if dat_subset.shape[0] < MIN_DATASET_SIZE:
                 continue
+            table = sm.stats.Table.from_data( dat_subset ) 
+            table, status_code = remove_low_occupancy_cells(table)
+            
+            if status_code == 0:
+                print(f"Association can not be determined. Likely too many gaps in the data table")
+                return -1, [], []
+            #print(table.table_orig.shape)
+            if table.table_orig.shape[0] < 2 or table.table_orig.shape[1]< 2:
+                print(f"Association can not be determined. Likely too many gaps in the data table")
+                return -1, [], []
+            if np.squeeze(table.table_orig).ndim == 1:
+                print(f"Association can not be determined. Likely too many gaps in the data table")
+                return -1, [], []
+            res = table.test_nominal_association()
+            pvalues_list.append(res.pvalue)
+            res_list.append(res)
+            #except:
+            #    continue
         #print(pvalues_list)
         pval = max(pvalues_list) ## crude. Prob of observing assuming null hyp (two variables are independent)
     
@@ -79,6 +95,10 @@ def remove_low_occupancy_cells(table, min_occupancy=5):
 
     table: statsmodel table object
     min_occupancy: int, optional
+
+    Returns:
+    table
+    status code: 1 okay, 0 failed
     """
 
     freq_df = table.table_orig.copy()
@@ -94,17 +114,25 @@ def remove_low_occupancy_cells(table, min_occupancy=5):
         row_idxmax = row_count.idxmax()
         col_idxmax = col_count.idxmax()
 
-        if row_count[row_idxmax] < col_count[col_idxmax]:
-            freq_df.drop(inplace=True, axis=0, labels=col_idxmax)
+        try:
+            if row_count[row_idxmax] < col_count[col_idxmax]:
+                freq_df.drop(inplace=True, axis=0, labels=col_idxmax)
+        except:
+            return sm.stats.Table(freq_df)
 
-        if row_count[row_idxmax] >= col_count[col_idxmax]:
-            freq_df.drop(inplace=True, axis=1, labels=row_idxmax)
+        try:
+            if row_count[row_idxmax] >= col_count[col_idxmax]:
+                freq_df.drop(inplace=True, axis=1, labels=row_idxmax)
+        except:
+            return sm.stats.Table(freq_df)
 
         #print(freq_df)
-
-    table_new = sm.stats.Table(freq_df)
-    ## Catch empty counts table!
-    return table_new
+    try: 
+        table_new = sm.stats.Table(freq_df)
+        return table_new, 1
+    except:
+        ## Empty df
+        return table, 0
 
 
 def tfl_preprocess(dat):
