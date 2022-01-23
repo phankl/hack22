@@ -33,8 +33,7 @@ def check_graph(n, b):
     a_sym = a + a.T
 
     # degree matrix
-    deg = np.sum(a_sym, axis=0)
-    
+    deg = np.sum(a_sym, axis=0)    
 
     d = np.diag(deg)
 
@@ -58,7 +57,7 @@ def check_graph(n, b):
  
 def classify_path_nodes(a, path):
   result = [0] * (len(path) - 2)
-  for i, node in enumerate[path[1:-1]]:
+  for i, node in enumerate(path[1:-1]):
     prev_node = path[i-1]
     next_node = path[i+1]
     
@@ -85,7 +84,7 @@ def difference_combinations(pair, n):
 
   return combs
 
-def check_model(dat, a, node_map, paths, node_types, descendants):
+def check_model(cache, a, node_map, paths, node_types, descendants):
   n = len(a)
 
   for pair, sub in paths.items():
@@ -114,12 +113,15 @@ def check_model(dat, a, node_map, paths, node_types, descendants):
       
       x_label = TEST_FEATURES[x_node]
       y_label = TEST_FEATURES[y_node]
-      z_labels = [TEST_FEATURES[z_node] for z_node in z_nodes]
+      z_labels = sorted([TEST_FEATURES[z_node] for z_node in z_nodes])
+      
+      input_tuple = tuple(sorted((x_label,) + (y_label,)))
+      if len(z_labels) > 0:
+        input_tuple += tuple(z_labels)
 
-      if len(z_labels) == 0:
-        z_labels = None
-      pair_independent = is_independent(dat, [x_label], [y_label], z_labels)
+      pair_independent = cache[input_tuple]
       if all_paths_blocked != pair_independent:
+        #print(input_tuple, cache[input_tuple])
         return False
         
   return True
@@ -134,6 +136,24 @@ def model_search(path, features):
   graphs = np.loadtxt(f"graphs_{n}.gam", dtype=int)
   models = []
 
+  # cache data dependencies
+  cache = {}
+  pairs = itertools.combinations(range(n), 2)
+  for pair in pairs:
+    zs = difference_combinations(pair, n)
+    for z in zs:
+      x_label = TEST_FEATURES[pair[0]]
+      y_label = TEST_FEATURES[pair[1]]
+      z_labels = sorted([TEST_FEATURES[z_node] for z_node in z])
+      input_tuple = tuple(sorted((x_label,) + (y_label,)))
+      if len(z_labels) == 0:
+        z_labels = None
+      else:
+        input_tuple += tuple(z_labels)
+      cache[input_tuple] = is_independent(dat, [x_label], [y_label], z_labels)[0]
+      if not cache[input_tuple]:
+        print(input_tuple)
+    
   count = 0
   for i, graph in enumerate(graphs):
     print(i/len(graphs)*100)
@@ -151,8 +171,8 @@ def model_search(path, features):
     a_sym = a + a.T
     g_sym = nx.convert_matrix.from_numpy_matrix(a_sym)
     pairs = itertools.combinations(range(n), 2)
-    paths = {pair: nx.algorithms.simple_paths.all_simple_paths(g, *pair) for pair in pairs}
-    
+    paths = {pair: nx.algorithms.simple_paths.all_simple_paths(g_sym, *pair) for pair in pairs}
+
     # classify path nodes as chain, fork or collider
     node_types = {pair: [classify_path_nodes(a, path) for path in sub] for pair, sub in paths.items()}
 
@@ -161,7 +181,7 @@ def model_search(path, features):
 
     # iterate over all node_maps to get models
     for node_map in node_maps_red:
-      if check_model(dat, a, node_map, paths, node_types, descendants):
+      if check_model(cache, a, node_map, paths, node_types, descendants):
         print("Model added")
         models += [(graph, node_map)]
       count += 1
@@ -179,4 +199,8 @@ def generate_dags(n, name):
   end = time.time()
   #print(n, end-start)
 
-model_search(FILEPATH, TEST_FEATURES_TFL)
+
+#model_search(FILEPATH, TEST_FEATURES_TFL)
+models = model_search(FILEPATH, TEST_FEATURES_TFL)
+print(models)
+

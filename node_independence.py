@@ -59,10 +59,10 @@ def is_independent(dat, X, Y, Z=None, categorical=True):
     #print(pval)
     if pval < P_VALUE_CRITERION: ## 5% significance, say. Reject the null 
         #print(f"{X} | {Z} depends on {Y}")
-        return 1, res_list, pvalues_list
+        return False, res_list, pvalues_list
     else:
         #print(f"{X} | {Z} does not depend on {Y}")
-        return 0, res_list, pvalues_list
+        return True, res_list, pvalues_list
 
 def tfl_preprocess(dat):
     """
