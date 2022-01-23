@@ -23,7 +23,7 @@ def unwrap_bool(n, b):
 
 def check_graph(n, b):
     n_edges = np.sum(b)
-    if n_edges < n:
+    if n_edges < n-1:
       return False
     
     # adjacency matrix
@@ -41,18 +41,32 @@ def check_graph(n, b):
     l = d - a_sym
 
     # eigenvalues
-    eigs = np.linalg.eigvalsh(l).astype(int)
+    eigs = np.rint(np.linalg.eigvalsh(l)).astype(int)
 
     # second lowest eigenvalue
-    conn = int(eigs[1])
+    conn = eigs[1]
     
+    '''
+    print("a:", a)
+    print("d:", d)
+    print("l:", l)
+    print("eigs:", eigs)
+    if(conn == 0):
+      print("Reject")
+    else:
+      print("Accept")
+    g = nx.convert_matrix.from_numpy_matrix(a)
+    nx.draw(g, arrows=True, with_labels=True)
+    plt.show()
+    '''
+
     if conn == 0:
       return False
     else:
-      g = nx.convert_matrix.from_numpy_matrix(a)
-      nx.draw(g, arrows=True)
+      #g = nx.convert_matrix.from_numpy_matrix(a)
+      #nx.draw(g, arrows=True)
       #plt.show()
-      plt.savefig('graph'+b+'.png')
+      #plt.savefig('graph'+b+'.png')
       return True
  
 def classify_path_nodes(path):
@@ -95,20 +109,25 @@ def check_model(cache, a, node_map, paths, node_types, descendants, features):
 
   for pair, sub in paths.items():
     zs = difference_combinations(pair, n)
+    #print("pair: ", pair)
     for z in zs:
+      #print("z: ", z)
       all_paths_blocked = True
       for i, path in enumerate(sub):
+        #print("path: ", path)
         path_blocked = False
         for j, node in enumerate(path[1:-1]):
           node_type = node_types[pair][i][j]
+          #print("path: ", path, "node: ", node, "node_type: ", node_type)
           # check for chain or fork blocker
           if (node_type == 0 or node_type == 1) and node in z:
             path_blocked = True
             break
           # check for collider blocker
-          if node_type == 2 and all([desc in z for desc in descendants[node]]):
+          if node_type == 2 and all([desc not in z for desc in descendants[node]]):
             path_blocked = True
             break
+        #print("path blocked: ", path_blocked)
         if not path_blocked:
           all_paths_blocked = False
           break
@@ -135,12 +154,13 @@ def check_model(cache, a, node_map, paths, node_types, descendants, features):
 def model_search(path, features):
     
   dat = pd.read_csv(path)[features] ## truncated set
-  print(dat)
-  #dat = tfl_preprocess(dat)
+  dat = tfl_preprocess(dat)
 
   n = len(dat.columns)
 
   graphs = np.loadtxt(f"graphs_{n}.gam", dtype=int)
+  if len(graphs.shape) == 1:
+    graphs = graphs.reshape((1, len(graphs)))
   models = []
 
   # cache data dependencies
@@ -178,7 +198,7 @@ def model_search(path, features):
     a_sym = a + a.T
     g_sym = nx.convert_matrix.from_numpy_matrix(a_sym)
     pairs = itertools.combinations(range(n), 2)
-    paths = {pair: nx.algorithms.simple_paths.all_simple_paths(g_sym, *pair) for pair in pairs}
+    paths = {pair: list(nx.algorithms.simple_paths.all_simple_paths(g_sym, *pair)) for pair in pairs}
 
     # classify path nodes as chain, fork or collider
     node_types = {pair: [classify_path_nodes(path) for path in sub] for pair, sub in paths.items()}
@@ -189,17 +209,19 @@ def model_search(path, features):
     # iterate over all node_maps to get models
     for node_map in node_maps_red:
 
+      if check_model(cache, a, node_map, paths, node_types, descendants, features):
+        #print("Model added")
+        models += [(graph, node_map)]
+      #else:
+        #print("Model rejected")
+      count += 1
+      
       # show model
       '''
-      labels = {i: features[node_map[i]] for i in range(n)}
+      labels = {i: f'{i}: ' + features[node_map[i]] for i in range(n)}
       nx.draw(g, arrows=True, with_labels=True, labels=labels)
       plt.show()
       '''
-
-      if check_model(cache, a, node_map, paths, node_types, descendants, features):
-        print("Model added")
-        models += [(graph, node_map)]
-      count += 1
 
   return models
 
@@ -212,13 +234,26 @@ def generate_dags(n, name):
   np.savetxt(name, graphs, fmt='%i')
   
   end = time.time()
-  #print(n, end-start)
+  print(n, end-start)
 
-filepath = "tests/simple_chain_testset.csv"
-features = ['Z', 'Y', 'X']
+#filepath = "tests/simple_chain_testset.csv"
+#filepath = "tests/simple_collider_testset.csv"
+#features = ['Z', 'Y', 'X']
 
-#filepath = FILEPATH
-#features = TEST_FEATURES_TFL
+filepath = FILEPATH
+features = TEST_FEATURES_TFL
+
+#generate_dags(3, 'test.gam')
+#for n in range(2, 8):
+#  generate_dags(n, f'graphs_{n}.gam')
 
 models = model_search(filepath, features)
+
 print(models)
+n = len(features)
+for graph, node_map in models:
+  a = unwrap_bool(n, graph)
+  g = nx.convert_matrix.from_numpy_matrix(a, create_using=nx.DiGraph)
+  labels = {i: f'{i}: ' + features[node_map[i]] for i in range(n)}
+  nx.draw(g, arrows=True, with_labels=True, labels=labels)
+  plt.show()
