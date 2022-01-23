@@ -20,6 +20,7 @@ def causal_graph():
 
 	#return the graph image wrapped in html
 	return render_template('graph.html', url='graph.png')
+	#return "test"
 
 if __name__ == "__main__":
 	app.run()

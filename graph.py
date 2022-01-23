@@ -127,7 +127,7 @@ def check_model(dat, a, node_map, paths, node_types, descendants):
 def model_search(path, features):
     
   dat = pd.read_csv(path)[features] ## truncated set
-  dat = time_preprocess(dat)
+  dat = tfl_preprocess(dat)
 
   n = len(dat.columns)
 
@@ -179,4 +179,4 @@ def generate_dags(n, name):
   end = time.time()
   #print(n, end-start)
 
-model_search(FILEPATH, TEST_FEATURES)
+model_search(FILEPATH, TEST_FEATURES_TFL)
