@@ -8,7 +8,7 @@ import statsmodels.api as sm
 ## Constants
 
 MIN_DATASET_SIZE=1000
-P_VALUE_CRITERION = 0.01
+P_VALUE_CRITERION = 0.20
 FILEPATH = "data/2005-tfldata-accidents.csv" # Note this is a local path - must change for server (tekeh)
 TEST_FEATURES_TFL = ['Accident Severity', 'Road Type', 'Time', 'Light Conditions (Banded)', 'Road Surface', 'Weather'] ## The subset we will build the model on
 DAYLIGHT_HORIZON = 1800
