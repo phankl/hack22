@@ -256,4 +256,5 @@ for graph, node_map in models:
   g = nx.convert_matrix.from_numpy_matrix(a, create_using=nx.DiGraph)
   labels = {i: f'{i}: ' + features[node_map[i]] for i in range(n)}
   nx.draw(g, arrows=True, with_labels=True, labels=labels)
-  plt.show()
+  #plt.show()
+  plt.savefig('graph.png')

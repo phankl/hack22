@@ -20,7 +20,7 @@ def causal_graph():
 	##need to access b in order to get the appropriate image
 	
 	#return the graph image wrapped in html
-	graph_name = 'graph'+b+'.png'
+	graph_name = 'graph.png'
 	return render_template('graph.html', url=graph_name)
 	#return "test"
 
