@@ -52,7 +52,7 @@ def check_graph(n, b):
       g = nx.convert_matrix.from_numpy_matrix(a)
       nx.draw(g, arrows=True)
       #plt.show()
-      plt.savefig('graph.png')
+      plt.savefig('graph'+b+'.png')
       return True
  
 def classify_path_nodes(path):

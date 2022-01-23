@@ -18,8 +18,11 @@ def causal_graph():
 	#column_names = [col for col in df.columns]
 	#return {"columns":column_names}
 
+	##need to access b in order to get the appropriate image
+	
 	#return the graph image wrapped in html
-	return render_template('graph.html', url='graph.png')
+	return render_template('graph.html', url='graph'+b+'.png')
+	#return "test"
 
 if __name__ == "__main__":
 	app.run()
