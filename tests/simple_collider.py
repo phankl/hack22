@@ -5,12 +5,15 @@ import pandas as pd
 ##                  f_(xy)
 
 SAMPS = 10000
+fxy = lambda x, y: x + y
 
-fxy = lambda x, y: x**2 + y
+X = np.random.uniform(0,1, size=SAMPS)
+Y = np.random.uniform(0,5,size=SAMPS)
+Z = fxy(X,Y) + np.random.normal(0,.1, size=SAMPS)
 
-X = np.random.normal(0,5, size=SAMPS)
-Y = np.random.normal(0,5,size=SAMPS)
-Z = fxy(X,Y) + np.random.normal(0,1, size=SAMPS)
+X = (X< np.median(X))+1
+Y = (Y< np.median(Y))+1
+Z = (Z< np.median(Z))+1
 
 data_dict = {'X': X, 'Y': Y, 'Z': Z}
 gen_data = pd.DataFrame(data_dict)
