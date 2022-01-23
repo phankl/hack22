@@ -21,7 +21,8 @@ def is_independent(dat, X, Y, Z=None, categorical=True):
     dat : pandas dataframe
     X : column label, type == list
     Y : column label, type == list
-    Z : column labels (1 for now, but will generalise), type == list
+    Z : column labels (1 for now, but will generalise), type == list, optional
+    categorical: bool, optional
 
     Works for categorical data at the moment - continuous data is even easier
     """
@@ -32,6 +33,10 @@ def is_independent(dat, X, Y, Z=None, categorical=True):
         ## Testing direct dependence
         #tab = pd.crosstab(dat[X], dat[Y])
         table = sm.stats.Table.from_data(dat[X+Y]) 
+        table = remove_low_occupancy_cells(table)
+        if np.squeeze(table.table_orig).ndim == 1:
+            print(f"Association can not be determined. Likely too many gaps in the data table")
+            return -1, [], []
         res = table.test_nominal_association()
         pval = res.pvalue
 
@@ -48,6 +53,10 @@ def is_independent(dat, X, Y, Z=None, categorical=True):
                 if dat_subset.shape[0] < MIN_DATASET_SIZE:
                     continue
                 table = sm.stats.Table.from_data( dat_subset ) 
+                table = remove_low_occupancy_cells(table)
+                if np.squeeze(table.table_orig).ndim == 1:
+                    print(f"Association can not be determined. Likely too many gaps in the data table")
+                    return -1, [], []
                 res = table.test_nominal_association()
                 pvalues_list.append(res.pvalue)
                 res_list.append(res)
@@ -58,11 +67,45 @@ def is_independent(dat, X, Y, Z=None, categorical=True):
     
     #print(pval)
     if pval < P_VALUE_CRITERION: ## 5% significance, say. Reject the null 
-        print(f"{X} | {Z} is associated with {Y} (likely dependence)")
+        print(f"{X} | {Z} is associated with {Y} (likely dependence, p={pval})")
         return False, res_list, pvalues_list
     else:
-        print(f"{X} | {Z} is not associated with {Y} (likely independence)")
+        print(f"{X} | {Z} is not associated with {Y} (likely independence, p={pval})")
         return True, res_list, pvalues_list
+
+def remove_low_occupancy_cells(table, min_occupancy=5):
+    """
+    Removes cells in frequency tables with low occupancy as this screws up the independene test.  is often qutoed as the best min occcupancy.
+
+    table: statsmodel table object
+    min_occupancy: int, optional
+    """
+
+    freq_df = table.table_orig.copy()
+    freq_df[freq_df < min_occupancy] = np.nan
+    ## Now delete rows and columns as appropriate
+    ## Greedy algo
+    while np.any(freq_df.isna()):
+        ## If it becomes 1d, then the chi2 makes no sense
+
+        row_count = freq_df.isna().sum(axis=0)
+        col_count = freq_df.isna().sum(axis=1)
+
+        row_idxmax = row_count.idxmax()
+        col_idxmax = col_count.idxmax()
+
+        if row_count[row_idxmax] < col_count[col_idxmax]:
+            freq_df.drop(inplace=True, axis=0, labels=col_idxmax)
+
+        if row_count[row_idxmax] >= col_count[col_idxmax]:
+            freq_df.drop(inplace=True, axis=1, labels=row_idxmax)
+
+        #print(freq_df)
+
+    table_new = sm.stats.Table(freq_df)
+    ## Catch empty counts table!
+    return table_new
+
 
 def tfl_preprocess(dat):
     """
@@ -79,22 +122,21 @@ def mtg_preprocess(dat):
     return dat
 
 if __name__ == "__main__":
-
-    #Y = ['Road Surface']
-    #X = ['Accident Severity']
-    #Z = ['Weather']
-    #bit, res_list, p_list = is_independent(dat, X, Y, Z)
-    
     ## Testset TFL
     dat = pd.read_csv(FILEPATH)[TEST_FEATURES_TFL] ## truncated set
     dat = tfl_preprocess(dat)
     ## Test: Do all possible combs (with |Z| = 1) to see the results and intuitively evaluate
-    from itertools import product, combinations
+    from itertools import product, combinations, permutations
     for X, Y in combinations(TEST_FEATURES_TFL, r=2):
         #print(X,Y,Z)
         #bit, res_list, p_list = is_independent(dat, [X], [Y], [Z])
         bit, res_list, p_list = is_independent(dat, [X], [Y])
 
+
+    for X, Y, Z in permutations(TEST_FEATURES_TFL, r=3):
+        #print(X,Y,Z)
+        #bit, res_list, p_list = is_independent(dat, [X], [Y], [Z])
+        bit, res_list, p_list = is_independent(dat, [X], [Y], [Z])
 
     ## Testet MTG
     ## Test
