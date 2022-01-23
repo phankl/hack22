@@ -154,7 +154,7 @@ def check_model(cache, a, node_map, paths, node_types, descendants, features):
 def model_search(path, features):
     
   dat = pd.read_csv(path)[features] ## truncated set
-  #dat = tfl_preprocess(dat)
+  dat = tfl_preprocess(dat)
 
   n = len(dat.columns)
 
@@ -244,6 +244,7 @@ filepath = FILEPATH
 features = TEST_FEATURES_TFL
 
 features = ['Accident Severity', 'Light Conditions (Banded)', 'Time']
+plot_feat = ['Accidents', 'Light', 'Time']
 
 #generate_dags(3, 'test.gam')
 #for n in range(2, 8):
@@ -253,10 +254,17 @@ models = model_search(filepath, features)
 
 print(models)
 n = len(features)
+n_models = len(models)
+
+plt_plot = n_models*100 + 11
+
 for graph, node_map in models:
   a = unwrap_bool(n, graph)
   g = nx.convert_matrix.from_numpy_matrix(a, create_using=nx.DiGraph)
-  labels = {i: f'{i}: ' + features[node_map[i]] for i in range(n)}
+  labels = {i: f'{i}: ' + plot_feat[node_map[i]] for i in range(n)}
+  plt.subplot(plt_plot)
   nx.draw(g, arrows=True, with_labels=True, labels=labels)
-  #plt.show()
-  plt.savefig('graph.png')
+  plt_plot += 1
+  plt.savefig('graph.png', dpi=300)
+  
+#plt.show()
