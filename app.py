@@ -15,13 +15,13 @@ def causal_graph():
 	file = request.files['file']
 	df = pd.read_csv(file)
 
-	#column_names = [col for col in df.columns]
-	#return {"columns":column_names}
+	## pass df into graph.py
 
 	##need to access b in order to get the appropriate image
 	
 	#return the graph image wrapped in html
-	return render_template('graph.html', url='graph'+b+'.png')
+	graph_name = 'graph'+b+'.png'
+	return render_template('graph.html', url=graph_name)
 	#return "test"
 
 if __name__ == "__main__":
