@@ -55,15 +55,21 @@ def check_graph(n, b):
       plt.savefig('graph.png')
       return True
  
-def classify_path_nodes(a, path):
+def classify_path_nodes(path):
   result = [0] * (len(path) - 2)
   for i, node in enumerate(path[1:-1]):
-    prev_node = path[i-1]
-    next_node = path[i+1]
-    
-    prev_curr = a[prev_node][node]
-    curr_next = a[node][next_node]
+    prev_node = path[i]
+    next_node = path[i+2]
 
+    if prev_node > node:
+      prev_curr = 1
+    else:
+      prev_curr = 0
+    if node > next_node:
+      curr_next = 1
+    else:
+      curr_next = 0
+    
     if prev_curr == curr_next:
       # chain
       result[i] = 0
@@ -84,7 +90,7 @@ def difference_combinations(pair, n):
 
   return combs
 
-def check_model(cache, a, node_map, paths, node_types, descendants):
+def check_model(cache, a, node_map, paths, node_types, descendants, features):
   n = len(a)
 
   for pair, sub in paths.items():
@@ -111,9 +117,9 @@ def check_model(cache, a, node_map, paths, node_types, descendants):
       y_node = node_map[pair[1]]
       z_nodes = [node_map[z_node] for z_node in z]
       
-      x_label = TEST_FEATURES[x_node]
-      y_label = TEST_FEATURES[y_node]
-      z_labels = sorted([TEST_FEATURES[z_node] for z_node in z_nodes])
+      x_label = features[x_node]
+      y_label = features[y_node]
+      z_labels = sorted([features[z_node] for z_node in z_nodes])
       
       input_tuple = tuple(sorted((x_label,) + (y_label,)))
       if len(z_labels) > 0:
@@ -129,7 +135,7 @@ def check_model(cache, a, node_map, paths, node_types, descendants):
 def model_search(path, features):
     
   dat = pd.read_csv(path)[features] ## truncated set
-  dat = time_preprocess(dat)
+  dat = tfl_preprocess(dat)
 
   n = len(dat.columns)
 
@@ -142,9 +148,9 @@ def model_search(path, features):
   for pair in pairs:
     zs = difference_combinations(pair, n)
     for z in zs:
-      x_label = TEST_FEATURES[pair[0]]
-      y_label = TEST_FEATURES[pair[1]]
-      z_labels = sorted([TEST_FEATURES[z_node] for z_node in z])
+      x_label = features[pair[0]]
+      y_label = features[pair[1]]
+      z_labels = sorted([features[z_node] for z_node in z])
       input_tuple = tuple(sorted((x_label,) + (y_label,)))
       if len(z_labels) == 0:
         z_labels = None
@@ -174,14 +180,14 @@ def model_search(path, features):
     paths = {pair: nx.algorithms.simple_paths.all_simple_paths(g_sym, *pair) for pair in pairs}
 
     # classify path nodes as chain, fork or collider
-    node_types = {pair: [classify_path_nodes(a, path) for path in sub] for pair, sub in paths.items()}
+    node_types = {pair: [classify_path_nodes(path) for path in sub] for pair, sub in paths.items()}
 
     # get all descendant nodes for each node
     descendants = [nx.descendants(g, i) | {i} for i in range(n)]
 
     # iterate over all node_maps to get models
     for node_map in node_maps_red:
-      if check_model(cache, a, node_map, paths, node_types, descendants):
+      if check_model(cache, a, node_map, paths, node_types, descendants, features):
         print("Model added")
         models += [(graph, node_map)]
       count += 1
@@ -199,5 +205,5 @@ def generate_dags(n, name):
   end = time.time()
   #print(n, end-start)
 
-models = model_search(FILEPATH, TEST_FEATURES)
+models = model_search(FILEPATH, TEST_FEATURES_TFL)
 print(models)
